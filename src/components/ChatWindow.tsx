@@ -21,7 +21,6 @@ import {
 import { Message, User } from '../types';
 import { EmojiPicker } from './EmojiPicker';
 import { QuickReactionToolbar } from './QuickReactionToolbar';
-import { VirtualKeyboard } from './VirtualKeyboard';
 import { AudioMessageBubble } from './AudioMessageBubble';
 
 const formatMessageTime = (ts: number) => {
@@ -93,7 +92,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 }) => {
   const [inputText, setInputText] = useState<string>('');
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
-  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState<boolean>(false);
   const [activeReactionMessageId, setActiveReactionMessageId] = useState<string | null>(null);
   const [moreEmojiForMessageId, setMoreEmojiForMessageId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -792,7 +790,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowVirtualKeyboard(true);
+                  setShowEmojiPicker((prev) => !prev);
                 }}
                 className="text-[#8e929b] hover:text-white transition-colors cursor-pointer shrink-0 p-0.5"
                 title="Emoji"
@@ -805,8 +803,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                onClick={() => setShowVirtualKeyboard(true)}
-                onFocus={() => setShowVirtualKeyboard(true)}
+                onPaste={(e) => {
+                  const items = e.clipboardData?.items;
+                  if (!items) return;
+                  for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                      const file = items[i].getAsFile();
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const result = reader.result as string;
+                          onSendMessage('GIF / Stiker', 'image', result);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -867,20 +880,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         )}
       </div>
-
-      <VirtualKeyboard
-        isOpen={showVirtualKeyboard}
-        onKeyPress={(char) => {
-          setInputText((prev) => prev + char);
-        }}
-        onBackspace={() => {
-          setInputText((prev) => prev.slice(0, -1));
-        }}
-        onEnter={() => {
-          handleSendText();
-        }}
-        onClose={() => setShowVirtualKeyboard(false)}
-      />
 
       {showDeleteConvConfirm && (
         <div

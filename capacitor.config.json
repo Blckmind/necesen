@@ -1,0 +1,9 @@
+{
+  "appId": "com.necesen.app",
+  "appName": "Necesen",
+  "webDir": "dist",
+  "server": {
+    "url": "https://necesen.onrender.com",
+    "cleartext": true
+  }
+}
